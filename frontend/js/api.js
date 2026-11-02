@@ -3,7 +3,7 @@
  * All communication with the backend server
  */
 
-const API_BASE_URL = 'http://localhost:3001/api';
+const API_BASE_URL = 'https://meet-notes-ai-abhi.onrender.com/api';
 
 /**
  * Generic fetch wrapper with error handling
