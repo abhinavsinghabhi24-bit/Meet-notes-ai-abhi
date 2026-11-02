@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="MeetNotes AI – AI-powered meeting notes tool that converts transcripts into summaries, key discussion points, and action items using Google Gemini." />
+  <meta name="keywords" content="meeting notes, AI, Gemini, transcript, action items, meeting summary" />
+  <meta name="author" content="MeetNotes AI" />
+  <meta property="og:title" content="MeetNotes AI – Intelligent Meeting Notes" />
+  <meta property="og:description" content="Transform meeting transcripts into structured summaries and action items with Google Gemini AI." />
+  <title>MeetNotes AI – AI-Powered Meeting Notes</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<!-- ── Loading Overlay ──────────────────────────────────────────── -->
+<div class="loading-overlay" id="loading-overlay" role="status" aria-live="polite">
+  <div class="loading-spinner"></div>
+  <p class="loading-text" id="loading-message">Processing...</p>
+  <div class="loading-dots" id="loading-dots" style="display:none">
+    <span></span><span></span><span></span>
+  </div>
+</div>
+
+<!-- ── Toast Container ──────────────────────────────────────────── -->
+<div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+<!-- ── Meeting Detail Modal ─────────────────────────────────────── -->
+<div class="modal-overlay" id="meeting-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="modal" id="modal-content"></div>
+</div>
+
+<!-- ── Sidebar Overlay (mobile) ────────────────────────────────── -->
+<div class="sidebar-overlay" aria-hidden="true"></div>
+
+<!-- ── App Layout ───────────────────────────────────────────────── -->
+<div class="app-layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar" role="navigation" aria-label="Main navigation">
+    <div class="sidebar-logo">
+      <div class="logo-icon" aria-hidden="true">🧠</div>
+      <div class="logo-text">
+        <div class="logo-title">MeetNotes AI</div>
+        <div class="logo-subtitle">Powered by Gemini</div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-label">Main</div>
+      <button class="nav-item active" data-page="dashboard" id="nav-dashboard" aria-current="page">
+        <span class="nav-icon" aria-hidden="true">🏠</span>
+        Dashboard
+      </button>
+      <button class="nav-item" data-page="new-meeting" id="nav-new-meeting">
+        <span class="nav-icon" aria-hidden="true">✨</span>
+        New Meeting
+      </button>
+
+      <div class="nav-label">Library</div>
+      <button class="nav-item" data-page="history" id="nav-history">
+        <span class="nav-icon" aria-hidden="true">📋</span>
+        Meeting History
+      </button>
+      <button class="nav-item" data-page="search" id="nav-search">
+        <span class="nav-icon" aria-hidden="true">🔍</span>
+        Search
+      </button>
+
+      <div class="nav-label">Info</div>
+      <button class="nav-item" data-page="about" id="nav-about">
+        <span class="nav-icon" aria-hidden="true">💡</span>
+        About Project
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="status-badge">
+        <div class="status-dot" id="server-status-dot"></div>
+        <span id="server-status-text">Connecting...</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content" role="main">
+
+    <!-- Top Bar -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Toggle navigation menu">☰</button>
+        <h1 class="page-title" id="topbar-title">Dashboard</h1>
+        <p class="page-subtitle" id="topbar-subtitle">Welcome to MeetNotes AI</p>
+      </div>
+      <div class="topbar-right">
+        <div class="search-wrapper" role="search">
+          <span class="search-icon" aria-hidden="true">🔍</span>
+          <input
+            type="search"
+            class="search-input"
+            id="top-search"
+            placeholder="Search meetings..."
+            aria-label="Quick search meetings"
+            autocomplete="off"
+          />
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="navigateTo('new-meeting')" id="quick-new-btn">
+          ✨ New Meeting
+        </button>
+      </div>
+    </header>
+
+    <!-- Page Container -->
+    <div class="page-container">
+
+      <!-- ════════════════════════════════════════════════════
+           PAGE: DASHBOARD
+           ════════════════════════════════════════════════════ -->
+      <section class="page active" id="page-dashboard" aria-label="Dashboard">
+
+        <!-- Welcome Banner -->
+        <div class="welcome-banner">
+          <div class="welcome-content">
+            <div class="welcome-greeting">👋 Welcome Back</div>
+            <h2 class="welcome-title">MeetNotes AI</h2>
+            <p class="welcome-desc">
+              Transform your meeting transcripts into structured summaries, action items, and insights — powered by Google Gemini AI. Never miss a key decision or task again.
+            </p>
+            <div class="welcome-actions" style="margin-top:20px">
+              <button class="btn btn-primary btn-lg" onclick="navigateTo('new-meeting')" id="hero-analyze-btn">
+                ✨ Analyze New Meeting
+              </button>
+              <button class="btn btn-secondary btn-lg" onclick="navigateTo('history')" id="hero-history-btn"
+                style="background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.2);color:white">
+                📋 View History
+              </button>
+            </div>
+          </div>
+          <div class="welcome-visual" aria-hidden="true">🧠</div>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid" role="region" aria-label="Statistics">
+          <div class="stat-card purple">
+            <div class="stat-icon purple" aria-hidden="true">📋</div>
+            <div class="stat-info">
+              <div class="stat-value" id="stat-meetings">0</div>
+              <div class="stat-label">Meetings Analyzed</div>
+            </div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-icon green" aria-hidden="true">✅</div>
+            <div class="stat-info">
+              <div class="stat-value" id="stat-actions">0</div>
+              <div class="stat-label">Action Items Extracted</div>
+            </div>
+          </div>
+          <div class="stat-card blue">
+            <div class="stat-icon blue" aria-hidden="true">🤖</div>
+            <div class="stat-info">
+              <div class="stat-value">Gemini</div>
+              <div class="stat-label">AI Model</div>
+            </div>
+          </div>
+          <div class="stat-card orange">
+            <div class="stat-icon orange" aria-hidden="true">⚡</div>
+            <div class="stat-info">
+              <div class="stat-value">Real-time</div>
+              <div class="stat-label">AI Processing</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Two column: Recent + Checklist -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:28px" class="dashboard-grid">
+
+          <!-- Recent Meetings -->
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">📋 Recent Meetings</h2>
+              <button class="btn btn-ghost btn-sm" onclick="navigateTo('history')" id="view-all-btn">View All →</button>
+            </div>
+            <div class="card-body" style="padding:0">
+              <div id="recent-meetings-list" style="padding:0 8px 8px"></div>
+            </div>
+          </div>
+
+          <!-- Quick Actions -->
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <div class="card" style="padding:24px">
+              <h3 style="font-size:15px;font-weight:700;margin-bottom:16px;font-family:'Plus Jakarta Sans',sans-serif">⚡ Quick Actions</h3>
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <button class="btn btn-primary w-full" onclick="navigateTo('new-meeting')" id="quick-analyze-btn">
+                  ✨ Analyze New Meeting
+                </button>
+                <button class="btn btn-secondary w-full" onclick="navigateTo('history')" id="quick-history-btn">
+                  📋 Browse Meeting History
+                </button>
+                <button class="btn btn-secondary w-full" onclick="navigateTo('search')" id="quick-search-btn">
+                  🔍 Search Meetings
+                </button>
+              </div>
+            </div>
+
+            <div class="card" style="padding:20px;background:linear-gradient(135deg,rgba(108,99,255,0.04),rgba(167,139,250,0.02))">
+              <div style="font-size:13px;font-weight:600;color:var(--primary);margin-bottom:8px">💡 How it works</div>
+              <ol style="font-size:13px;color:var(--text-secondary);padding-left:18px;line-height:2">
+                <li>Paste your meeting transcript</li>
+                <li>Gemini AI analyzes the content</li>
+                <li>Get summary &amp; action items</li>
+                <li>Save to your meeting library</li>
+                <li>Search and review anytime</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+
+        <!-- Assessment Checklist -->
+        <div role="region" aria-label="Assessment checklist">
+          <div class="section-header">
+            <h2 class="section-title">🎯 Project-Specific Must-Have Features</h2>
+            <span class="badge badge-purple">Assessment Tracker</span>
+          </div>
+
+          <div class="checklist-grid" id="checklist-container" role="list">
+            <!-- Rendered by JS -->
+          </div>
+
+          <div class="overall-progress" role="region" aria-label="Overall progress">
+            <div class="overall-progress-header">
+              <div class="overall-progress-title">Overall Assessment Progress</div>
+              <div class="overall-progress-count" id="overall-completed">0/3</div>
+            </div>
+            <div class="progress-bar-wrapper" style="height:10px">
+              <div class="progress-bar-fill" id="overall-progress-bar" style="width:0%"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-top:6px">
+              <span>Features Completed</span>
+              <span id="overall-pct">0% Complete</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ════════════════════════════════════════════════════
+           PAGE: NEW MEETING
+           ════════════════════════════════════════════════════ -->
+      <section class="page" id="page-new-meeting" aria-label="New meeting analysis">
+
+        <div class="card" style="margin-bottom:24px">
+          <div class="card-header">
+            <h2 class="card-title">✨ New Meeting Analysis</h2>
+            <div class="ai-badge">
+              <span>🤖</span> Powered by Gemini AI
+            </div>
+          </div>
+          <div class="card-body">
+            <form id="meeting-form" onsubmit="return false" novalidate>
+              <div class="form-grid">
+                <!-- Meeting Title -->
+                <div class="form-group">
+                  <label class="form-label" for="meeting-title">
+                    Meeting Title <span class="required">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    class="form-input"
+                    id="meeting-title"
+                    name="meeting-title"
+                    placeholder="e.g. Q3 Product Planning Meeting"
+                    maxlength="200"
+                    required
+                  />
+                </div>
+
+                <!-- Meeting Date -->
+                <div class="form-group">
+                  <label class="form-label" for="meeting-date">Meeting Date</label>
+                  <input
+                    type="date"
+                    class="form-input"
+                    id="meeting-date"
+                    name="meeting-date"
+                  />
+                </div>
+
+                <!-- Participants -->
+                <div class="form-group full">
+                  <label class="form-label" for="participants">
+                    Participants <span style="color:var(--text-muted);font-weight:400">(optional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    class="form-input"
+                    id="participants"
+                    name="participants"
+                    placeholder="e.g. John Smith, Jane Doe, Team Lead"
+                    maxlength="500"
+                  />
+                  <span class="form-hint">Separate participant names with commas</span>
+                </div>
+
+                <!-- Transcript -->
+                <div class="form-group full">
+                  <label class="form-label" for="transcript">
+                    Meeting Transcript <span class="required">*</span>
+                  </label>
+                  <div class="transcript-actions">
+                    <button type="button" class="btn btn-secondary btn-sm" id="paste-sample-btn" aria-label="Load sample transcript">
+                      📋 Load Sample Transcript
+                    </button>
+                    <button type="button" class="btn btn-ghost btn-sm" id="clear-transcript-btn" aria-label="Clear transcript">
+                      🗑 Clear
+                    </button>
+                  </div>
+                  <textarea
+                    class="form-textarea"
+                    id="transcript"
+                    name="transcript"
+                    placeholder="Paste your full meeting transcript here...
+
+Example:
+[Meeting Title]
+Attendees: Alice, Bob, Charlie
+
+Alice: Let's discuss the project timeline...
+Bob: I think we should prioritize the backend first...
+..."
+                    style="min-height:280px"
+                    required
+                    maxlength="100000"
+                  ></textarea>
+                  <div class="char-count" id="char-count" aria-live="polite">0 / 100,000 characters</div>
+                </div>
+              </div>
+
+              <div class="form-actions">
+                <button type="button" class="btn btn-primary btn-lg" id="analyze-btn">
+                  ✨ Analyze Meeting
+                </button>
+                <button type="button" class="btn btn-secondary" id="clear-form-btn">
+                  ↩ Clear Form
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- AI Analysis Results -->
+        <div class="analysis-section" id="analysis-section" aria-live="polite">
+          <div class="analysis-header">
+            <h2 class="analysis-title">
+              🤖 AI Analysis Results
+            </h2>
+            <div class="ai-badge">✨ Gemini Generated</div>
+          </div>
+
+          <!-- Summary + Discussion Points -->
+          <div class="analysis-grid">
+            <!-- Summary -->
+            <div class="result-card">
+              <div class="result-card-header">
+                <div class="result-card-icon" style="background:rgba(108,99,255,0.1)" aria-hidden="true">📝</div>
+                <div class="result-card-title">Meeting Summary</div>
+              </div>
+              <div class="result-card-body" id="result-summary">
+                <p class="text-muted">Summary will appear here...</p>
+              </div>
+            </div>
+
+            <!-- Key Discussion Points -->
+            <div class="result-card">
+              <div class="result-card-header">
+                <div class="result-card-icon" style="background:rgba(59,130,246,0.1)" aria-hidden="true">💬</div>
+                <div class="result-card-title">Key Discussion Points</div>
+              </div>
+              <div class="result-card-body" id="result-discussion">
+                <p class="text-muted">Discussion points will appear here...</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Action Items -->
+          <div class="result-card" style="margin-bottom:16px">
+            <div class="result-card-header">
+              <div class="result-card-icon" style="background:rgba(16,185,129,0.1)" aria-hidden="true">✅</div>
+              <div class="result-card-title">Action Items & Assignments</div>
+            </div>
+            <div class="result-card-body" id="result-actions">
+              <p class="text-muted">Action items will appear here...</p>
+            </div>
+          </div>
+
+          <!-- Save / Copy / Re-analyze Actions -->
+          <div class="card">
+            <div class="analysis-actions">
+              <button class="btn btn-success btn-lg" id="save-meeting-btn">
+                💾 Save Meeting
+              </button>
+              <button class="btn btn-secondary" id="copy-summary-btn">
+                📋 Copy Summary
+              </button>
+              <button class="btn btn-ghost" id="analyze-again-btn">
+                🔄 Analyze Again
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ════════════════════════════════════════════════════
+           PAGE: HISTORY
+           ════════════════════════════════════════════════════ -->
+      <section class="page" id="page-history" aria-label="Meeting history">
+        <div class="section-header" style="margin-bottom:20px">
+          <h2 class="section-title">📋 Meeting History</h2>
+          <button class="btn btn-primary btn-sm" onclick="navigateTo('new-meeting')" id="history-new-btn">
+            ✨ New Meeting
+          </button>
+        </div>
+
+        <div class="history-filters" role="toolbar" aria-label="History filters">
+          <button class="filter-btn active" id="filter-all" onclick="window.History.filterMeetings('')">All Meetings</button>
+          <button class="filter-btn" id="filter-recent" onclick="window.History.filterMeetings('')">Recent</button>
+        </div>
+
+        <div id="history-container" aria-live="polite">
+          <!-- Rendered by JS -->
+        </div>
+      </section>
+
+      <!-- ════════════════════════════════════════════════════
+           PAGE: SEARCH
+           ════════════════════════════════════════════════════ -->
+      <section class="page" id="page-search" aria-label="Search meetings">
+        <div style="max-width:600px;margin:0 auto 28px">
+          <div style="position:relative">
+            <span style="position:absolute;left:16px;top:50%;transform:translateY(-50%);font-size:20px;color:var(--text-muted)" aria-hidden="true">🔍</span>
+            <input
+              type="search"
+              class="form-input"
+              id="search-page-input"
+              placeholder="Search by title, summary, keywords, participants..."
+              style="padding-left:48px;font-size:16px;height:52px;border-radius:14px"
+              aria-label="Search meetings"
+              autocomplete="off"
+            />
+          </div>
+          <p class="text-muted" style="text-align:center;margin-top:10px;font-size:13px" id="search-count" aria-live="polite"></p>
+        </div>
+
+        <div id="search-results-container">
+          <div class="empty-state">
+            <div class="empty-state-icon">🔍</div>
+            <h3 class="empty-state-title">Search Your Meetings</h3>
+            <p class="empty-state-desc">Enter keywords to search across meeting titles, summaries, transcripts, and participants</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ════════════════════════════════════════════════════
+           PAGE: ABOUT
+           ════════════════════════════════════════════════════ -->
+      <section class="page" id="page-about" aria-label="About MeetNotes AI">
+
+        <!-- Hero -->
+        <div class="welcome-banner" style="margin-bottom:28px">
+          <div class="welcome-content">
+            <div class="welcome-greeting">🎓 Generative AI Assessment Project</div>
+            <h2 class="welcome-title">About MeetNotes AI</h2>
+            <p class="welcome-desc">
+              MeetNotes AI is a full-stack AI-powered tool that transforms raw meeting transcripts into structured, actionable insights using Google Gemini's advanced language model. Built for the Generative AI Assessment.
+            </p>
+          </div>
+          <div class="welcome-visual" aria-hidden="true">🧠</div>
+        </div>
+
+        <!-- Tech Stack -->
+        <div class="card" style="margin-bottom:24px">
+          <div class="card-header">
+            <h2 class="card-title">🛠 Technology Stack</h2>
+          </div>
+          <div class="card-body">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px">
+              <div style="padding:16px;border-radius:12px;border:1px solid var(--border);background:var(--bg-primary)">
+                <div style="font-size:24px;margin-bottom:8px">🌐</div>
+                <div style="font-weight:700;font-size:14px;margin-bottom:4px">Frontend</div>
+                <div style="font-size:13px;color:var(--text-muted)">HTML5, CSS3, Vanilla JavaScript</div>
+              </div>
+              <div style="padding:16px;border-radius:12px;border:1px solid var(--border);background:var(--bg-primary)">
+                <div style="font-size:24px;margin-bottom:8px">⚙️</div>
+                <div style="font-weight:700;font-size:14px;margin-bottom:4px">Backend</div>
+                <div style="font-size:13px;color:var(--text-muted)">Node.js, Express.js, REST API</div>
+              </div>
+              <div style="padding:16px;border-radius:12px;border:1px solid var(--border);background:var(--bg-primary)">
+                <div style="font-size:24px;margin-bottom:8px">🤖</div>
+                <div style="font-weight:700;font-size:14px;margin-bottom:4px">AI Model</div>
+                <div style="font-size:13px;color:var(--text-muted)">Google Gemini 1.5 Flash API</div>
+              </div>
+              <div style="padding:16px;border-radius:12px;border:1px solid var(--border);background:var(--bg-primary)">
+                <div style="font-size:24px;margin-bottom:8px">🗄️</div>
+                <div style="font-weight:700;font-size:14px;margin-bottom:4px">Database</div>
+                <div style="font-size:13px;color:var(--text-muted)">PostgreSQL + Prisma ORM</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Feature Cards -->
+        <div class="section-header" style="margin-bottom:16px">
+          <h2 class="section-title">🎯 Core Features</h2>
+        </div>
+        <div class="about-grid" style="margin-bottom:28px">
+          <div class="about-feature-card">
+            <div class="about-feature-icon">📋</div>
+            <div class="about-feature-title">Smart Transcript Analysis</div>
+            <p class="about-feature-desc">Paste any meeting transcript — regardless of length or format. Gemini AI reads the full conversation and understands context, speakers, and intent.</p>
+          </div>
+          <div class="about-feature-card">
+            <div class="about-feature-icon">🤖</div>
+            <div class="about-feature-title">Gemini AI Integration</div>
+            <p class="about-feature-desc">Uses Google Gemini's generative AI on the backend to produce structured JSON output — never exposing the API key to the browser.</p>
+          </div>
+          <div class="about-feature-card">
+            <div class="about-feature-icon">✅</div>
+            <div class="about-feature-title">Action Item Extraction</div>
+            <p class="about-feature-desc">Automatically identifies tasks, assigns owners based on explicit mentions in the transcript, and extracts deadlines if stated. No hallucination.</p>
+          </div>
+          <div class="about-feature-card">
+            <div class="about-feature-icon">💾</div>
+            <div class="about-feature-title">Persistent Meeting Library</div>
+            <p class="about-feature-desc">Save all analyzed meetings to PostgreSQL. Browse, search, and open meeting details anytime — even after refreshing the browser.</p>
+          </div>
+          <div class="about-feature-card">
+            <div class="about-feature-icon">🔍</div>
+            <div class="about-feature-title">Full-Text Search</div>
+            <p class="about-feature-desc">Search across meeting titles, summaries, transcripts, and discussion points using PostgreSQL's full-text search capabilities.</p>
+          </div>
+          <div class="about-feature-card">
+            <div class="about-feature-icon">🔒</div>
+            <div class="about-feature-title">Secure Architecture</div>
+            <p class="about-feature-desc">API keys stored in server-side .env files only. Rate limiting, input validation, CORS, and Helmet.js for security headers.</p>
+          </div>
+        </div>
+
+        <!-- How Gemini Works Section -->
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">🤖 How Gemini AI Extracts Information</h2>
+          </div>
+          <div class="card-body">
+            <p style="color:var(--text-secondary);line-height:1.8;margin-bottom:16px">
+              MeetNotes AI sends the meeting transcript to Google Gemini with a carefully designed system prompt that instructs the model to:
+            </p>
+            <ol style="color:var(--text-secondary);line-height:2;padding-left:20px;margin-bottom:16px">
+              <li>Read and understand the complete conversation flow</li>
+              <li>Generate a concise, factual meeting summary</li>
+              <li>Extract all significant discussion points and topics</li>
+              <li>Identify action items and task assignments</li>
+              <li>Find responsible persons <strong>only</strong> when explicitly named</li>
+              <li>Extract deadlines <strong>only</strong> when clearly mentioned</li>
+              <li>Return structured JSON — never invent or hallucinate details</li>
+            </ol>
+            <div style="background:var(--bg-primary);border-radius:12px;padding:16px;font-family:monospace;font-size:13px;color:var(--text-secondary);border:1px solid var(--border)">
+              <div style="color:var(--primary);font-weight:600;margin-bottom:8px">// Expected Gemini Output Format</div>
+              <pre style="white-space:pre-wrap">{
+  "summary": "Meeting summary text...",
+  "discussion_points": ["Point 1", "Point 2"],
+  "action_items": [
+    {
+      "task": "Task description",
+      "owner": "Person name or Not specified",
+      "deadline": "Date or Not specified",
+      "status": "Pending"
+    }
+  ]
+}</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- API Endpoints -->
+        <div class="card" style="margin-top:24px">
+          <div class="card-header">
+            <h2 class="card-title">📡 REST API Endpoints</h2>
+          </div>
+          <div class="card-body">
+            <div class="table-wrapper">
+              <table class="ai-table">
+                <thead>
+                  <tr>
+                    <th>Method</th>
+                    <th>Endpoint</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="badge badge-green">POST</span></td>
+                    <td><code>/api/analyze</code></td>
+                    <td>Analyze transcript with Gemini AI</td>
+                  </tr>
+                  <tr>
+                    <td><span class="badge badge-green">POST</span></td>
+                    <td><code>/api/meetings</code></td>
+                    <td>Save a meeting to database</td>
+                  </tr>
+                  <tr>
+                    <td><span class="badge badge-blue">GET</span></td>
+                    <td><code>/api/meetings</code></td>
+                    <td>Retrieve all saved meetings</td>
+                  </tr>
+                  <tr>
+                    <td><span class="badge badge-blue">GET</span></td>
+                    <td><code>/api/meetings/:id</code></td>
+                    <td>Get specific meeting details</td>
+                  </tr>
+                  <tr>
+                    <td><span class="badge badge-blue">GET</span></td>
+                    <td><code>/api/meetings/search?q=</code></td>
+                    <td>Search meetings by keyword</td>
+                  </tr>
+                  <tr>
+                    <td><span class="badge badge-red">DELETE</span></td>
+                    <td><code>/api/meetings/:id</code></td>
+                    <td>Delete meeting (cascade)</td>
+                  </tr>
+                  <tr>
+                    <td><span class="badge badge-blue">GET</span></td>
+                    <td><code>/api/health</code></td>
+                    <td>Server and database health check</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+    </div><!-- end page-container -->
+  </main>
+</div><!-- end app-layout -->
+
+<!-- Scripts -->
+<script src="js/api.js"></script>
+<script src="js/history.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>

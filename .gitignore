@@ -1,0 +1,39 @@
+# ── Environment Variables (NEVER commit these) ──
+server/.env
+.env
+*.env
+
+# ── Node.js ──
+node_modules/
+server/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ── Prisma ──
+server/prisma/migrations/
+*.db
+*.db-journal
+
+# ── OS Files ──
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Editor ──
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── Build Outputs ──
+dist/
+build/
+.next/
+
+# ── Logs ──
+logs/
+*.log
+
+# ── Coverage ──
+coverage/

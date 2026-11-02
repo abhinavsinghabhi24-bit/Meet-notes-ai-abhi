@@ -1,0 +1,40 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Meeting {
+  id               String       @id @default(cuid())
+  title            String
+  date             DateTime     @default(now())
+  participants     String?
+  transcript       String       @db.Text
+  summary          String       @db.Text
+  discussionPoints Json // Stored as JSON array
+  actionItems      ActionItem[]
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  @@map("meetings")
+}
+
+model ActionItem {
+  id        String   @id @default(cuid())
+  meetingId String
+  meeting   Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  task      String   @db.Text
+  owner     String   @default("Not specified")
+  deadline  String   @default("Not specified")
+  status    String   @default("Pending")
+  createdAt DateTime @default(now())
+
+  @@map("action_items")
+}
